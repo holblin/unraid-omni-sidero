@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Container version="2">
+  <Name>Omni-Dex</Name>
+  <Repository>ghcr.io/dexidp/dex:latest</Repository>
+  <Registry>https://github.com/dexidp/dex/pkgs/container/dex</Registry>
+  <Network>host</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/holblin/unraid-omni-sidero/issues</Support>
+  <Project>https://dexidp.io/</Project>
+  <Overview>Optional local OIDC identity provider for the Omni Unraid template. Use only when setup.sh was run with --auth dex. Start Dex before Omni.</Overview>
+  <Category>Tools: Network:Management</Category>
+  <TemplateURL>https://raw.githubusercontent.com/holblin/unraid-omni-sidero/main/templates/omni-dex.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/holblin/unraid-omni-sidero/main/images/omni.svg</Icon>
+  <ExtraParams>--restart unless-stopped</ExtraParams>
+  <PostArgs>dex serve /config/dex/dex.yaml</PostArgs>
+  <Config Name="Omni Appdata" Target="/config" Default="/mnt/user/appdata/omni" Mode="rw" Description="The same appdata directory used by Omni. Dex reads configuration/TLS files and persists its SQLite database here." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/omni</Config>
+</Container>
