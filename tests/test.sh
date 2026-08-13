@@ -93,6 +93,10 @@ validate_common_yaml "$DEX_DIR/omni.yaml" 'https://192.168.50.10:5556'
 assert_file_contains "$DEX_DIR/omni.yaml" 'advertisedURL: "https://192.168.50.10:8443"'
 ruby -ryaml -e 'YAML.safe_load(File.read(ARGV[0]))' "$DEX_DIR/dex/dex.yaml"
 assert_file_contains "$DEX_DIR/dex/dex.yaml" 'https://192.168.50.10:8443/oidc/consume'
+# shellcheck disable=SC2016 # Assert the literal appdata expression in setup.sh.
+assert_file_contains "$ROOT/setup.sh" 'chown root:1001 "$APPDATA/tls/server.key"'
+[[ $(ruby -e 'printf "%o", File.stat(ARGV[0]).mode & 0777' "$DEX_DIR/tls/server.key") == 640 ]] || \
+  fail 'shared TLS server key is not readable by the non-root Dex container user'
 openssl x509 -in "$DEX_DIR/tls/server.crt" -noout -ext subjectAltName | grep -Fq 'IP Address:192.168.50.10'
 BEFORE=$(shasum "$DEX_DIR/account-id" "$DEX_DIR/omni.asc" "$DEX_DIR/tls/ca.key" "$DEX_DIR/tls/server.key" "$DEX_DIR/omni.yaml")
 OMNI_DEX_PASSWORD='a different ignored password' run_setup \

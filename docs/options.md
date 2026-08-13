@@ -136,7 +136,7 @@ Because Omni uses host networking, changing a port means editing every matching 
 | `tls/ca.crt` | Local CA certificate to install on clients | Yes; safe to distribute |
 | `tls/ca.key` | Local CA private key | Yes, critical; never distribute |
 | `tls/server.crt` / `server-chain.pem` | Omni/Dex server certificate and chain | Yes |
-| `tls/server.key` | Omni/Dex private TLS key | Yes, critical; never distribute |
+| `tls/server.key` | Shared Omni/Dex private TLS key; group-readable only by Dex GID 1001 | Yes, critical; never distribute or expose the appdata share publicly |
 | `tls/trust-bundle.pem` | CA bundle used for Omni's outbound TLS verification | Yes |
 
 Back up the entire appdata directory together. Setup refuses to continue if it finds only part of the critical identity set because silently generating replacements could make existing encrypted data unreadable.
@@ -152,4 +152,3 @@ Back up the entire appdata directory together. Setup refuses to continue if it f
 - EULA acceptance deferred to the Omni UI
 
 Advanced Omni fields can be edited directly in `omni.yaml`. Consult Sidero's [complete Omni configuration reference](https://docs.siderolabs.com/omni/reference/omni-configuration) before enabling external etcd, backups, workload proxying, or other features.
-

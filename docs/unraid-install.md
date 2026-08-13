@@ -98,7 +98,7 @@ Copy this file from Unraid to every computer that will open Omni:
 
 Import it as a trusted root certificate using your operating system or browser's certificate manager. This is necessary because the default IP certificate is signed by a private CA rather than a public certificate authority.
 
-Do not distribute `ca.key`, `server.key`, or `omni.asc`.
+Do not distribute `ca.key`, `server.key`, or `omni.asc`, and do not expose the appdata share publicly. The server key grants group-read access only to GID 1001 used by the official non-root Dex image; the CA and etcd-encryption private keys remain owner-only.
 
 ### 5. Open Omni
 

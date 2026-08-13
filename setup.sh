@@ -330,7 +330,14 @@ EOF
   log "Wrote $APPDATA/omni.yaml"
 fi
 
-chmod 600 "$APPDATA/account-id" "$APPDATA/omni.asc" "$APPDATA/tls/ca.key" "$APPDATA/tls/server.key"
+chmod 600 "$APPDATA/account-id" "$APPDATA/omni.asc" "$APPDATA/tls/ca.key"
+# Omni and Dex use different container users, so both must be able to read the
+# shared server key. Dex's official image uses GID 1001. Keep all private keys
+# inaccessible to other host users.
+if [[ "${OMNI_SETUP_TEST_MODE:-0}" != 1 ]]; then
+  chown root:1001 "$APPDATA/tls/server.key"
+fi
+chmod 640 "$APPDATA/tls/server.key"
 chmod 644 "$APPDATA/tls/ca.crt" "$APPDATA/tls/server.crt" "$APPDATA/tls/server-chain.pem" "$APPDATA/omni.yaml"
 chmod 644 "$APPDATA/tls/trust-bundle.pem"
 [[ ! -f "$APPDATA/dex/dex.yaml" ]] || chmod 644 "$APPDATA/dex/dex.yaml"
