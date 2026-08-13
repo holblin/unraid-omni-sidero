@@ -117,6 +117,8 @@ On the first visit:
 3. For Dex, sign in using the email supplied to `--admin-email` and the password entered during setup.
 4. Confirm the Omni dashboard loads.
 
+The official Omni image is intentionally minimal and does not include `sh` or `bash`; therefore an interactive **Console** is not available for this container. Use **Logs** for diagnostics and run supported commands directly, for example `docker exec Omni /omni --version`.
+
 ### 6. Check machine connectivity
 
 Talos machines must be able to reach the Unraid IP on:

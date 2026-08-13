@@ -171,6 +171,7 @@ S3 etcd backups can be enabled in `omni.yaml` following [Sidero's backup documen
 
 ## Troubleshooting
 
+- **Unraid Console does not open:** expected; the official minimal Omni image contains no interactive shell. Use container logs or run `/omni` commands directly with `docker exec`.
 - **Omni exits immediately:** check `docker logs Omni`; verify `/dev/net/tun` exists, the appdata path is correct, and no required host port is occupied.
 - **OIDC discovery or certificate error:** verify the issuer is reachable from Unraid and append the provider's private CA to `tls/trust-bundle.pem`.
 - **Redirect mismatch:** the provider redirect must exactly equal `https://UNRAID-IP:8443/oidc/consume` (or use the configured optional hostname).

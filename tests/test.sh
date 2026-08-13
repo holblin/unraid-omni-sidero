@@ -37,6 +37,9 @@ assert_file_contains "$ROOT/templates/omni.xml" '<Network>host</Network>'
 assert_file_contains "$ROOT/templates/omni.xml" '--cap-add NET_ADMIN'
 assert_file_contains "$ROOT/templates/omni.xml" '--device /dev/net/tun:/dev/net/tun'
 assert_file_contains "$ROOT/templates/omni.xml" '<WebUI>https://[IP]:8443</WebUI>'
+if grep -Fq '<Shell>' "$ROOT/templates/omni.xml"; then
+  fail 'minimal Omni image must not advertise an interactive shell'
+fi
 assert_file_contains "$ROOT/templates/omni-dex.xml" 'ghcr.io/dexidp/dex:latest'
 assert_file_contains "$ROOT/templates/omni-dex.xml" '<PostArgs>dex serve /config/dex/dex.yaml</PostArgs>'
 assert_file_contains "$ROOT/setup.sh" "apk add --no-cache ca-certificates"

@@ -5,11 +5,10 @@
   <Registry>https://github.com/siderolabs/omni/pkgs/container/omni</Registry>
   <Network>host</Network>
   <MyIP/>
-  <Shell>sh</Shell>
   <Privileged>false</Privileged>
   <Support>https://github.com/holblin/unraid-omni-sidero/issues</Support>
   <Project>https://docs.siderolabs.com/omni/overview/what-is-omni</Project>
-  <Overview>Single-instance Sidero Omni with embedded etcd for homelab and non-production use. Run setup.sh before installing this template. Omni requires an OIDC provider; install the optional Omni-Dex template for a local login or configure Authentik/generic OIDC.</Overview>
+  <Overview>Single-instance Sidero Omni with embedded etcd for homelab and non-production use. Run setup.sh before installing this template. Omni requires an OIDC provider; install the optional Omni-Dex template for a local login or configure Authentik/generic OIDC. The upstream image is minimal and intentionally has no interactive console shell.</Overview>
   <Category>Tools: Network:Management</Category>
   <WebUI>https://[IP]:8443</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/holblin/unraid-omni-sidero/main/templates/omni.xml</TemplateURL>

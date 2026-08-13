@@ -5,7 +5,6 @@
   <Registry>https://github.com/dexidp/dex/pkgs/container/dex</Registry>
   <Network>host</Network>
   <MyIP/>
-  <Shell>sh</Shell>
   <Privileged>false</Privileged>
   <Support>https://github.com/holblin/unraid-omni-sidero/issues</Support>
   <Project>https://dexidp.io/</Project>
