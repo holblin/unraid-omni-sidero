@@ -24,6 +24,8 @@ It is safe to replay while testing new revisions. Existing account identity, cer
 
 The installer does not automatically create or replace running containers. After it completes, select the refreshed templates under **Docker → Add Container** as described below.
 
+If Unraid displays **Version: not available**, select **Check for Updates** at the bottom of the Docker page. This label is Unraid's remote-image update status, not Omni's application version. If it remains unavailable, verify the server can reach GHCR with `docker pull ghcr.io/siderolabs/omni:latest`; DNS, system time, or registry connectivity commonly prevents Unraid from obtaining the remote digest.
+
 ## Manual installation
 
 ### 1. Download the project

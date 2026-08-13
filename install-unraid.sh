@@ -5,7 +5,11 @@ REPOSITORY="holblin/unraid-omni-sidero"
 BRANCH="${OMNI_INSTALL_BRANCH:-main}"
 RAW_BASE="https://raw.githubusercontent.com/${REPOSITORY}/${BRANCH}"
 TEMPLATE_DIR="${OMNI_TEMPLATE_DIR:-/boot/config/plugins/dockerMan/templates-user}"
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || true)
+SCRIPT_PATH="${BASH_SOURCE[0]:-}"
+SCRIPT_DIR=""
+if [[ -n "$SCRIPT_PATH" ]]; then
+  SCRIPT_DIR=$(cd "$(dirname "$SCRIPT_PATH")" 2>/dev/null && pwd || true)
+fi
 TEMP_DIR=""
 
 cleanup() {

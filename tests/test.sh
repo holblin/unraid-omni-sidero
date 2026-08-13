@@ -17,6 +17,8 @@ assert_file_contains() {
 
 printf '%s\n' 'Checking shell syntax...'
 bash -n "$ROOT/setup.sh" "$ROOT/install-unraid.sh" "$ROOT/tests/test.sh"
+# shellcheck disable=SC2016 # Assert the literal safe BASH_SOURCE expansion.
+assert_file_contains "$ROOT/install-unraid.sh" 'SCRIPT_PATH="${BASH_SOURCE[0]:-}"'
 if "$ROOT/setup.sh" --address >/dev/null 2>&1; then
   fail 'missing option value should be rejected'
 fi
