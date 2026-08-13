@@ -185,16 +185,21 @@ else
   log "Preserving existing account UUID, CA, TLS certificate, and encryption key."
 fi
 
-if [[ ! -f "$APPDATA/tls/trust-bundle.pem" ]]; then
+if [[ ! -s "$APPDATA/tls/trust-bundle.pem" ]]; then
+  trust_bundle_new="$APPDATA/tls/trust-bundle.pem.new"
+  rm -f "$trust_bundle_new"
   if [[ "${OMNI_SETUP_TEST_MODE:-0}" == 1 ]]; then
-    cp "$APPDATA/tls/ca.crt" "$APPDATA/tls/trust-bundle.pem"
+    cp "$APPDATA/tls/ca.crt" "$trust_bundle_new"
   else
-    docker run --rm --entrypoint cat ghcr.io/siderolabs/omni:latest \
-      /etc/ssl/certs/ca-certificates.crt >"$APPDATA/tls/trust-bundle.pem" || \
-      die "could not extract the system CA bundle from the Omni image"
-    printf '\n' >>"$APPDATA/tls/trust-bundle.pem"
-    sed -n '/-----BEGIN CERTIFICATE-----/,$p' "$APPDATA/tls/ca.crt" >>"$APPDATA/tls/trust-bundle.pem"
+    docker run --rm alpine:3.22 sh -ec \
+      'apk add --no-cache ca-certificates >/dev/null; cat /etc/ssl/certs/ca-certificates.crt' \
+      >"$trust_bundle_new" || \
+      die "could not generate the system CA bundle"
+    printf '\n' >>"$trust_bundle_new"
+    sed -n '/-----BEGIN CERTIFICATE-----/,$p' "$APPDATA/tls/ca.crt" >>"$trust_bundle_new"
   fi
+  [[ -s "$trust_bundle_new" ]] || die "generated CA trust bundle is empty"
+  mv "$trust_bundle_new" "$APPDATA/tls/trust-bundle.pem"
 fi
 
 ACCOUNT_ID=$(tr -d '[:space:]' <"$APPDATA/account-id")

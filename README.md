@@ -34,6 +34,14 @@ Omni uses host networking because SideroLink/WireGuard requires it. Ensure these
 
 The concise steps are below. First-time users should follow the [complete Unraid installation guide](docs/unraid-install.md), which includes template installation through DockerMan and post-install checks.
 
+For a repeatable IP-first installation that also refreshes the local Unraid templates:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/holblin/unraid-omni-sidero/main/install-unraid.sh | bash -s -- --address 192.168.101.96 --admin-email holblin@gmail.com --auth dex
+```
+
+You can replay this command when testing repository updates. Persistent identity and data are preserved.
+
 ### 1. Choose a stable IP
 
 Give the Unraid server a static LAN IP or DHCP reservation. The default setup uses this IP directly and does not require local DNS or a domain.

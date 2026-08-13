@@ -16,12 +16,12 @@ assert_file_contains() {
 }
 
 printf '%s\n' 'Checking shell syntax...'
-bash -n "$ROOT/setup.sh" "$ROOT/tests/test.sh"
+bash -n "$ROOT/setup.sh" "$ROOT/install-unraid.sh" "$ROOT/tests/test.sh"
 if "$ROOT/setup.sh" --address >/dev/null 2>&1; then
   fail 'missing option value should be rejected'
 fi
 if command -v shellcheck >/dev/null 2>&1; then
-  shellcheck "$ROOT/setup.sh" "$ROOT/tests/test.sh"
+  shellcheck "$ROOT/setup.sh" "$ROOT/install-unraid.sh" "$ROOT/tests/test.sh"
 else
   printf '%s\n' 'shellcheck not installed; skipping local shellcheck'
 fi
@@ -37,10 +37,32 @@ assert_file_contains "$ROOT/templates/omni.xml" '--device /dev/net/tun:/dev/net/
 assert_file_contains "$ROOT/templates/omni.xml" '<WebUI>https://[IP]:8443</WebUI>'
 assert_file_contains "$ROOT/templates/omni-dex.xml" 'ghcr.io/dexidp/dex:latest'
 assert_file_contains "$ROOT/templates/omni-dex.xml" '<PostArgs>dex serve /config/dex/dex.yaml</PostArgs>'
+assert_file_contains "$ROOT/setup.sh" "apk add --no-cache ca-certificates"
+# shellcheck disable=SC2016 # Assert the literal shell expression in setup.sh.
+assert_file_contains "$ROOT/setup.sh" '[[ ! -s "$APPDATA/tls/trust-bundle.pem" ]]'
+if grep -Fq -- '--entrypoint cat ghcr.io/siderolabs/omni' "$ROOT/setup.sh"; then
+  fail 'setup must not assume the minimal Omni image contains cat'
+fi
 assert_file_contains "$ROOT/README.md" '[Complete Unraid installation guide](docs/unraid-install.md)'
 for option in --address --admin-email --appdata --hostname --auth --oidc-provider-url --oidc-client-id --force-config; do
   assert_file_contains "$ROOT/docs/options.md" "$option"
 done
+
+printf '%s\n' 'Exercising repeatable Unraid installer...'
+INSTALL_DIR="$TMP_ROOT/installer"
+OMNI_SETUP_TEST_MODE=1 OMNI_DEX_PASSWORD='installer-test-password' \
+  OMNI_TEMPLATE_DIR="$INSTALL_DIR/templates" "$ROOT/install-unraid.sh" \
+  --appdata "$INSTALL_DIR/appdata" --address 192.168.60.10 \
+  --admin-email installer@example.com --auth dex >/dev/null
+[[ -f "$INSTALL_DIR/templates/my-omni.xml" ]] || fail 'installer did not install Omni template'
+[[ -f "$INSTALL_DIR/templates/my-omni-dex.xml" ]] || fail 'installer did not install Dex template'
+INSTALL_BEFORE=$(shasum "$INSTALL_DIR/appdata/account-id" "$INSTALL_DIR/appdata/omni.asc")
+OMNI_SETUP_TEST_MODE=1 OMNI_DEX_PASSWORD='ignored-on-replay' \
+  OMNI_TEMPLATE_DIR="$INSTALL_DIR/templates" "$ROOT/install-unraid.sh" \
+  --appdata "$INSTALL_DIR/appdata" --address 192.168.60.10 \
+  --admin-email installer@example.com --auth dex >/dev/null
+INSTALL_AFTER=$(shasum "$INSTALL_DIR/appdata/account-id" "$INSTALL_DIR/appdata/omni.asc")
+[[ "$INSTALL_BEFORE" == "$INSTALL_AFTER" ]] || fail 'replayed installer changed persistent identity'
 
 run_setup() {
   OMNI_SETUP_TEST_MODE=1 "$ROOT/setup.sh" "$@" >/dev/null
