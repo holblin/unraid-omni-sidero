@@ -213,7 +213,9 @@ if [[ "$AUTH_MODE" == "dex" ]]; then
       # shellcheck disable=SC2016 # bcrypt hashes contain literal dollar signs.
       DEX_PASSWORD_HASH='$2y$12$test.hash.for.configuration.validation.only'
     else
-      DEX_PASSWORD_HASH=$(printf '%s\n%s\n' "$DEX_PASSWORD" "$DEX_PASSWORD" | \
+      # htpasswd -i reads the complete stdin as one password. The setup prompt
+      # already confirmed the value, so feed it exactly once.
+      DEX_PASSWORD_HASH=$(printf '%s\n' "$DEX_PASSWORD" | \
         docker run --rm -i httpd:2.4-alpine htpasswd -niBC 12 admin | sed -n 's/^admin://p')
     fi
     [[ -n "$DEX_PASSWORD_HASH" ]] || die "failed to generate the Dex password hash"

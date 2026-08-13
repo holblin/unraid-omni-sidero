@@ -24,7 +24,7 @@ If `--address` or `--admin-email` is omitted in an interactive terminal, setup p
 
 | Variable | Used by | Description |
 | --- | --- | --- |
-| `OMNI_DEX_PASSWORD` | `--auth dex` | Supplies the initial local password without a prompt. Prefer an interactive prompt where possible; environment variables can be visible to privileged processes. The clear-text password is not written to appdata. |
+| `OMNI_DEX_PASSWORD` | `--auth dex` | Supplies the initial local password without a prompt. Prefer an interactive prompt where possible; environment variables can be visible to privileged processes. The clear-text password is fed once to `htpasswd` and is not written to appdata. |
 | `OMNI_OIDC_CLIENT_SECRET` | `--auth authentik` or `oidc` | Supplies the provider's client secret without a prompt. It is written to `omni.yaml` because Omni requires it at startup; protect and back up that file accordingly. |
 
 Do not pass secrets as command-line arguments because they can be saved in shell history or exposed in process listings.

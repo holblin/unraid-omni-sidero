@@ -43,6 +43,10 @@ fi
 assert_file_contains "$ROOT/templates/omni-dex.xml" 'ghcr.io/dexidp/dex:latest'
 assert_file_contains "$ROOT/templates/omni-dex.xml" '<PostArgs>dex serve /config/dex/dex.yaml</PostArgs>'
 assert_file_contains "$ROOT/setup.sh" "apk add --no-cache ca-certificates"
+assert_file_contains "$ROOT/setup.sh" "printf '%s\\n' \"\$DEX_PASSWORD\""
+if grep -Fq -- "printf '%s\\n%s\\n' \"\$DEX_PASSWORD\" \"\$DEX_PASSWORD\"" "$ROOT/setup.sh"; then
+  fail 'Dex password must be piped to htpasswd exactly once'
+fi
 # shellcheck disable=SC2016 # Assert the literal shell expression in setup.sh.
 assert_file_contains "$ROOT/setup.sh" '[[ ! -s "$APPDATA/tls/trust-bundle.pem" ]]'
 if grep -Fq -- '--entrypoint cat ghcr.io/siderolabs/omni' "$ROOT/setup.sh"; then
