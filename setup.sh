@@ -15,15 +15,15 @@ usage() {
 Configure a single-instance Omni installation for Unraid.
 
 Usage:
-  setup.sh --hostname NAME --address IP --admin-email EMAIL [options]
+  setup.sh --address IP --admin-email EMAIL [options]
 
 Required:
-  --hostname NAME          DNS name used to reach Omni (for example omni.home.arpa)
   --address IP             LAN IP advertised to Talos machines
   --admin-email EMAIL      Initial Omni administrator; must match the OIDC email claim
 
 Options:
   --appdata PATH           Appdata directory (default: /mnt/user/appdata/omni)
+  --hostname NAME          Optional DNS name; defaults all endpoints to --address
   --auth MODE              dex, authentik, or oidc (default: dex)
   --oidc-provider-url URL  Issuer URL for authentik/oidc modes
   --oidc-client-id ID      OIDC client ID for authentik/oidc modes
@@ -64,16 +64,18 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -t 0 ]]; then
-  [[ -n "$HOSTNAME_VALUE" ]] || { read -r -p "Omni DNS hostname: " HOSTNAME_VALUE; }
   [[ -n "$ADDRESS" ]] || { read -r -p "Reachable LAN IPv4 address: " ADDRESS; }
   [[ -n "$ADMIN_EMAIL" ]] || { read -r -p "Initial admin email: " ADMIN_EMAIL; }
 fi
 
-[[ -n "$HOSTNAME_VALUE" ]] || die "--hostname is required"
 [[ -n "$ADDRESS" ]] || die "--address is required"
 [[ -n "$ADMIN_EMAIL" ]] || die "--admin-email is required"
-[[ "$HOSTNAME_VALUE" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]] || die "invalid DNS hostname"
 [[ "$ADDRESS" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || die "--address must be an IPv4 address"
+if [[ -n "$HOSTNAME_VALUE" ]]; then
+  [[ "$HOSTNAME_VALUE" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]] || die "invalid DNS hostname"
+else
+  HOSTNAME_VALUE=$ADDRESS
+fi
 [[ "$ADMIN_EMAIL" =~ ^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$ ]] || die "invalid admin email"
 case "$AUTH_MODE" in dex|authentik|oidc) ;; *) die "--auth must be dex, authentik, or oidc" ;; esac
 
@@ -143,7 +145,8 @@ if (( identity_count == 0 )); then
     printf '[req]\ndistinguished_name=dn\nreq_extensions=req_ext\nprompt=no\n'
     printf '[dn]\nCN=%s\n' "$HOSTNAME_VALUE"
     printf '[req_ext]\nsubjectAltName=@alt_names\n'
-    printf '[alt_names]\nDNS.1=%s\nIP.1=%s\nIP.2=127.0.0.1\n' "$HOSTNAME_VALUE" "$ADDRESS"
+    printf '[alt_names]\nIP.1=%s\nIP.2=127.0.0.1\n' "$ADDRESS"
+    [[ "$HOSTNAME_VALUE" == "$ADDRESS" ]] || printf 'DNS.1=%s\n' "$HOSTNAME_VALUE"
   } >"$san_config"
   openssl req -new -newkey rsa:4096 -nodes -keyout "$APPDATA/tls/server.key" \
     -out "$APPDATA/tls/server.csr" -config "$san_config" >/dev/null 2>&1
@@ -336,7 +339,7 @@ Setup complete.
   Authentication: ${AUTH_MODE}
   Local CA:      ${APPDATA}/tls/ca.crt
 
-Make ${HOSTNAME_VALUE} resolve to ${ADDRESS}, trust ca.crt on your clients, and
-open the ports documented in README.md. For Dex mode, install/start Omni-Dex
+Trust ca.crt on your clients and open the ports documented in README.md. If you
+specified a hostname, make it resolve to ${ADDRESS}. For Dex mode, install/start Omni-Dex
 before Omni. EULA acceptance is completed in the Omni UI on first launch.
 EOF

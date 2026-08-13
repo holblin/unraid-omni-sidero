@@ -17,7 +17,7 @@ assert_file_contains() {
 
 printf '%s\n' 'Checking shell syntax...'
 bash -n "$ROOT/setup.sh" "$ROOT/tests/test.sh"
-if "$ROOT/setup.sh" --hostname >/dev/null 2>&1; then
+if "$ROOT/setup.sh" --address >/dev/null 2>&1; then
   fail 'missing option value should be rejected'
 fi
 if command -v shellcheck >/dev/null 2>&1; then
@@ -37,6 +37,10 @@ assert_file_contains "$ROOT/templates/omni.xml" '--device /dev/net/tun:/dev/net/
 assert_file_contains "$ROOT/templates/omni.xml" '<WebUI>https://[IP]:8443</WebUI>'
 assert_file_contains "$ROOT/templates/omni-dex.xml" 'ghcr.io/dexidp/dex:latest'
 assert_file_contains "$ROOT/templates/omni-dex.xml" '<PostArgs>dex serve /config/dex/dex.yaml</PostArgs>'
+assert_file_contains "$ROOT/README.md" '[Complete Unraid installation guide](docs/unraid-install.md)'
+for option in --address --admin-email --appdata --hostname --auth --oidc-provider-url --oidc-client-id --force-config; do
+  assert_file_contains "$ROOT/docs/options.md" "$option"
+done
 
 run_setup() {
   OMNI_SETUP_TEST_MODE=1 "$ROOT/setup.sh" "$@" >/dev/null
@@ -61,16 +65,16 @@ validate_common_yaml() {
 printf '%s\n' 'Exercising Dex setup and idempotence...'
 DEX_DIR="$TMP_ROOT/dex"
 OMNI_DEX_PASSWORD='correct horse battery staple' run_setup \
-  --appdata "$DEX_DIR" --hostname omni.test --address 192.168.50.10 \
+  --appdata "$DEX_DIR" --address 192.168.50.10 \
   --admin-email admin@example.com --auth dex
-validate_common_yaml "$DEX_DIR/omni.yaml" 'https://omni.test:5556'
+validate_common_yaml "$DEX_DIR/omni.yaml" 'https://192.168.50.10:5556'
+assert_file_contains "$DEX_DIR/omni.yaml" 'advertisedURL: "https://192.168.50.10:8443"'
 ruby -ryaml -e 'YAML.safe_load(File.read(ARGV[0]))' "$DEX_DIR/dex/dex.yaml"
-assert_file_contains "$DEX_DIR/dex/dex.yaml" 'https://omni.test:8443/oidc/consume'
-openssl x509 -in "$DEX_DIR/tls/server.crt" -noout -ext subjectAltName | grep -Fq 'DNS:omni.test'
+assert_file_contains "$DEX_DIR/dex/dex.yaml" 'https://192.168.50.10:8443/oidc/consume'
 openssl x509 -in "$DEX_DIR/tls/server.crt" -noout -ext subjectAltName | grep -Fq 'IP Address:192.168.50.10'
 BEFORE=$(shasum "$DEX_DIR/account-id" "$DEX_DIR/omni.asc" "$DEX_DIR/tls/ca.key" "$DEX_DIR/tls/server.key" "$DEX_DIR/omni.yaml")
 OMNI_DEX_PASSWORD='a different ignored password' run_setup \
-  --appdata "$DEX_DIR" --hostname omni.test --address 192.168.50.10 \
+  --appdata "$DEX_DIR" --address 192.168.50.10 \
   --admin-email admin@example.com --auth dex
 AFTER=$(shasum "$DEX_DIR/account-id" "$DEX_DIR/omni.asc" "$DEX_DIR/tls/ca.key" "$DEX_DIR/tls/server.key" "$DEX_DIR/omni.yaml")
 [[ "$BEFORE" == "$AFTER" ]] || fail 'idempotent setup changed persistent identity or configuration'
