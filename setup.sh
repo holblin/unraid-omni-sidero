@@ -305,9 +305,10 @@ services:
     keyFile: "/config/tls/server.key"
   machineAPI:
     endpoint: "0.0.0.0:8090"
-    advertisedURL: "https://${HOSTNAME_VALUE}:8090"
-    certFile: "/config/tls/server-chain.pem"
-    keyFile: "/config/tls/server.key"
+    # Talos installation media does not trust the private CA generated for this
+    # LAN-only deployment. Authenticate the initial join with Omni's strict join
+    # token, then carry machine traffic over the encrypted SideroLink tunnel.
+    advertisedURL: "grpc://${ADDRESS}:8090"
   siderolink:
     joinTokensMode: strict
     eventSinkPort: 8091
@@ -350,10 +351,12 @@ Setup complete.
 
   Appdata:       ${APPDATA}
   Omni URL:      https://${HOSTNAME_VALUE}:8443
+  Machine API:   grpc://${ADDRESS}:8090 (trusted LAN only)
   Authentication: ${AUTH_MODE}
   Local CA:      ${APPDATA}/tls/ca.crt
 
-Trust ca.crt on your clients and open the ports documented in README.md. If you
+Trust ca.crt on your clients and open the ports documented in README.md. Do not
+expose the plaintext machine API on port 8090 outside the trusted Talos LAN. If you
 specified a hostname, make it resolve to ${ADDRESS}. For Dex mode, install/start Omni-Dex
 before Omni. EULA acceptance is completed in the Omni UI on first launch.
 EOF

@@ -8,7 +8,8 @@ Run these checks on an Unraid test host after `setup.sh` and template installati
 4. Accept the EULA and complete the selected OIDC login.
 5. Restart both containers and confirm the same account and Omni state remain.
 6. Recreate both containers from their templates and repeat the state check.
-7. Boot a Talos machine using the Omni join configuration and verify it appears in Omni.
-8. Download a kubeconfig and confirm it connects through `https://UNRAID-IP:8100`.
+7. Confirm `omni.yaml` advertises `grpc://UNRAID-IP:8090`, that port 8090 is reachable only from the trusted Talos LAN, and that no router port-forward exposes it.
+8. Download fresh installation media from this Omni instance, boot a Talos machine with it, and verify the machine appears in Omni.
+9. Download a kubeconfig and confirm it connects through `https://UNRAID-IP:8100`.
 
 These checks are intentionally manual: a meaningful test requires host networking, WireGuard, an identity provider, and a Talos machine.

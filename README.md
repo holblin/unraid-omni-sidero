@@ -16,8 +16,8 @@ The default endpoints are:
 | Port | Protocol | Purpose |
 | --- | --- | --- |
 | 8443 | TCP | Omni UI and API |
-| 8090 | TCP | Machine/SideroLink API |
-| 8091 | TCP | Talos event sink |
+| 8090 | TCP | LAN-only plaintext gRPC machine-registration API |
+| 8091 | TCP | Talos event sink inside SideroLink |
 | 8100 | TCP | Kubernetes API proxy |
 | 5556 | TCP | Dex OIDC, Dex mode only |
 | 50180 | UDP | SideroLink WireGuard |
@@ -139,14 +139,16 @@ This works with standards-compliant providers such as Authentik and Keycloak. Pr
 
 Edit `/mnt/user/appdata/omni/omni.yaml`, then restart Omni. The file uses Sidero's current [configuration schema](https://docs.siderolabs.com/omni/reference/omni-configuration). Useful extensions include S3 etcd backups, workload proxying, external etcd, and break-glass configuration.
 
-Changing an advertised IP, optional hostname, or port also requires a matching TLS certificate and firewall changes. Rerunning with `--force-config` does not rotate the existing certificate, so an address change requires a deliberate migration and new certificate signed by the existing CA.
+Changing an advertised IP, optional hostname, or port requires matching firewall and configuration changes. The browser-facing API and Kubernetes proxy also require a matching TLS certificate. Rerunning with `--force-config` does not rotate the existing certificate, so a browser-facing address change requires a deliberate migration and a new certificate signed by the existing CA.
+
+The generated machine API uses `grpc://UNRAID-IP:8090` because Talos installation media does not automatically trust the private CA created by this LAN-only setup. Strict join tokens authenticate initial registration; after registration, machine traffic uses the encrypted SideroLink WireGuard tunnel. Do not expose port 8090 to the internet or an untrusted network. To use HTTPS for machine registration, replace it with a DNS name and certificate chain trusted by Talos, then regenerate all installation media.
 
 ## Firewall and connectivity
 
 Allow the tabled ports from the networks that need them. At minimum:
 
 - Browsers and CLI clients need `8443/tcp` and, when applicable, `5556/tcp`.
-- Talos machines need `8090/tcp`, `8091/tcp`, and `50180/udp` to the advertised Unraid address.
+- Talos machines need `8090/tcp` and `50180/udp` to the advertised Unraid address. Port `8090` must remain restricted to the trusted machine LAN. Events on `8091/tcp` travel inside SideroLink and do not need a LAN firewall opening.
 - Administrative clients using generated kubeconfigs need `8100/tcp`.
 - Omni needs outbound HTTPS/DNS access to the configured OIDC provider, Sidero registries, and `factory.talos.dev` unless those services are mirrored.
 
@@ -177,7 +179,14 @@ S3 etcd backups can be enabled in `omni.yaml` following [Sidero's backup documen
 - **Redirect mismatch:** the provider redirect must exactly equal `https://UNRAID-IP:8443/oidc/consume` (or use the configured optional hostname).
 - **Login succeeds but access is denied:** the OIDC email claim must exactly match the initial admin email in `omni.yaml`.
 - **Browser certificate warning:** access Omni by the configured IP (or optional hostname) and trust `tls/ca.crt` on that client.
-- **Talos machine never appears:** verify `8090/tcp`, `8091/tcp`, `50180/udp`, and that the advertised LAN IP is reachable from the machine.
+- **Talos machine never appears:** verify `8090/tcp`, `50180/udp`, and that the advertised LAN IP is reachable from the machine. Confirm the media was downloaded from this Omni instance and contains a current strict join token. After changing the machine API URL or token, download and flash new media; existing images retain their old connection parameters.
+- **Talos reports an authentication handshake failure:** older configurations advertised the privately signed machine API as HTTPS. Back up `omni.yaml`, change its `machineAPI` block to the example below, restart Omni, and download fresh installation media. Editing this block avoids resetting Dex/OIDC settings with a full `--force-config` regeneration.
+
+  ```yaml
+  machineAPI:
+    endpoint: "0.0.0.0:8090"
+    advertisedURL: "grpc://UNRAID-IP:8090"
+  ```
 - **Port 8443 is unavailable:** change both API endpoint/advertised URL in `omni.yaml`, regenerate a matching setup if required, and update the template WebUI URL.
 
 ## Manual acceptance checklist

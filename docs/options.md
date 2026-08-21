@@ -114,8 +114,8 @@ Do not install this template for Authentik or generic OIDC modes.
 | Default | Config path | Purpose |
 | --- | --- | --- |
 | `8443/tcp` | `services.api.endpoint` | Omni UI and API |
-| `8090/tcp` | `services.machineAPI.endpoint` | Machine registration/SideroLink API |
-| `8091/tcp` | `services.siderolink.eventSinkPort` | Talos event sink |
+| `8090/tcp` | `services.machineAPI.endpoint` | LAN-only plaintext gRPC machine registration; restrict to trusted Talos networks |
+| `8091/tcp` | `services.siderolink.eventSinkPort` | Talos event sink inside the SideroLink tunnel; no LAN exposure required |
 | `8100/tcp` | `services.kubernetesProxy.endpoint` | Kubernetes API proxy used by generated kubeconfigs |
 | `5556/tcp` | `dex.yaml` issuer/web settings | Dex OIDC, only in Dex mode |
 | `50180/udp` | `services.siderolink.wireGuard` | SideroLink WireGuard tunnel |
@@ -148,7 +148,8 @@ Back up the entire appdata directory together. Setup refuses to continue if it f
 - Strict SideroLink join tokens
 - Workload proxy disabled
 - Auth0 disabled and the selected OIDC provider enabled
-- API, machine API, and Kubernetes proxy protected by the generated certificate
+- Browser API and Kubernetes proxy protected by the generated certificate
+- Machine registration over LAN-only plaintext gRPC with strict join-token authentication, followed by encrypted SideroLink transport
 - EULA acceptance deferred to the Omni UI
 
 Advanced Omni fields can be edited directly in `omni.yaml`. Consult Sidero's [complete Omni configuration reference](https://docs.siderolabs.com/omni/reference/omni-configuration) before enabling external etcd, backups, workload proxying, or other features.

@@ -8,7 +8,7 @@ No domain or local DNS is required. The examples use the Unraid server's static 
 
 - Give Unraid a static IPv4 address or DHCP reservation.
 - Confirm `/dev/net/tun` exists by running `ls -l /dev/net/tun` in the Unraid terminal.
-- Ensure ports `8443`, `8090`, `8091`, `8100`, `5556`, and `50180` are not already used. Port `5556` is only needed for Dex.
+- Ensure ports `8443`, `8090`, `8091`, `8100`, `5556`, and `50180` are not already used by another local service. Port `5556` is only needed for Dex; port `8091` is used inside SideroLink and does not require a LAN firewall opening.
 - Decide whether to use the included local Dex login or an existing Authentik/OIDC provider.
 - Read Sidero's licensing terms. Free self-hosting is intended for non-production use, and Omni requires EULA acceptance.
 
@@ -124,8 +124,11 @@ The official Omni image is intentionally minimal and does not include `sh` or `b
 Talos machines must be able to reach the Unraid IP on:
 
 - `8090/tcp` for machine registration
-- `8091/tcp` for events
 - `50180/udp` for SideroLink WireGuard
+
+The generated machine-registration URL is `grpc://UNRAID-IP:8090`. This avoids a TLS trust failure because Talos installation media does not automatically trust the private CA generated for this local deployment. Strict join tokens authenticate registration, and subsequent machine traffic uses encrypted SideroLink. Restrict `8090/tcp` to the trusted Talos LAN; never forward it from the internet. HTTPS machine registration instead requires a DNS name and certificate chain trusted by Talos.
+
+After changing the machine API URL, advertised address, or join token, download and flash new installation media from Omni. Previously generated images retain the old connection parameters.
 
 Administrative clients using an Omni-generated kubeconfig also need `8100/tcp`. These are LAN connections by default; router port forwarding is unnecessary when all machines are on the same network.
 

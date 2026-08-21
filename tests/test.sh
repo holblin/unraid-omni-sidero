@@ -86,11 +86,14 @@ validate_common_yaml() {
     abort "wrong sqlite path" unless cfg.dig("storage", "sqlite", "path") == "/config/data/omni.db"
     abort "wrong API endpoint" unless cfg.dig("services", "api", "endpoint") == "0.0.0.0:8443"
     abort "wrong machine endpoint" unless cfg.dig("services", "machineAPI", "endpoint") == "0.0.0.0:8090"
+    abort "wrong machine advertised URL" unless cfg.dig("services", "machineAPI", "advertisedURL") == "grpc://#{ARGV[2]}:8090"
+    abort "machine API unexpectedly has TLS certificate" if cfg.dig("services", "machineAPI").key?("certFile")
+    abort "machine API unexpectedly has TLS key" if cfg.dig("services", "machineAPI").key?("keyFile")
     abort "wrong event port" unless cfg.dig("services", "siderolink", "eventSinkPort") == 8091
     abort "wrong proxy endpoint" unless cfg.dig("services", "kubernetesProxy", "endpoint") == "0.0.0.0:8100"
     abort "workload proxy enabled" unless cfg.dig("services", "workloadProxy", "enabled") == false
     abort "wrong provider" unless cfg.dig("auth", "oidc", "providerURL") == ARGV[1]
-  ' "$file" "$expected_provider"
+  ' "$file" "$expected_provider" "$3"
 }
 
 printf '%s\n' 'Exercising Dex setup and idempotence...'
@@ -98,7 +101,7 @@ DEX_DIR="$TMP_ROOT/dex"
 OMNI_DEX_PASSWORD='correct horse battery staple' run_setup \
   --appdata "$DEX_DIR" --address 192.168.50.10 \
   --admin-email admin@example.com --auth dex
-validate_common_yaml "$DEX_DIR/omni.yaml" 'https://192.168.50.10:5556'
+validate_common_yaml "$DEX_DIR/omni.yaml" 'https://192.168.50.10:5556' '192.168.50.10'
 assert_file_contains "$DEX_DIR/omni.yaml" 'advertisedURL: "https://192.168.50.10:8443"'
 ruby -ryaml -e 'YAML.safe_load(File.read(ARGV[0]))' "$DEX_DIR/dex/dex.yaml"
 assert_file_contains "$DEX_DIR/dex/dex.yaml" 'https://192.168.50.10:8443/oidc/consume'
@@ -120,7 +123,7 @@ OMNI_OIDC_CLIENT_SECRET='authentik-secret' run_setup \
   --appdata "$AUTHENTIK_DIR" --hostname omni-auth.test --address 10.20.30.40 \
   --admin-email owner@example.com --auth authentik \
   --oidc-provider-url https://auth.test/application/o/omni/ --oidc-client-id omni-client
-validate_common_yaml "$AUTHENTIK_DIR/omni.yaml" 'https://auth.test/application/o/omni/'
+validate_common_yaml "$AUTHENTIK_DIR/omni.yaml" 'https://auth.test/application/o/omni/' '10.20.30.40'
 assert_file_contains "$AUTHENTIK_DIR/omni.yaml" 'clientID: "omni-client"'
 
 printf '%s\n' 'Exercising generic OIDC setup and explicit config regeneration...'
@@ -129,7 +132,7 @@ OMNI_OIDC_CLIENT_SECRET='generic-secret' run_setup \
   --appdata "$OIDC_DIR" --hostname omni-oidc.test --address 172.16.1.5 \
   --admin-email oidc@example.com --auth oidc \
   --oidc-provider-url https://idp.test/realms/home --oidc-client-id generic-client
-validate_common_yaml "$OIDC_DIR/omni.yaml" 'https://idp.test/realms/home'
+validate_common_yaml "$OIDC_DIR/omni.yaml" 'https://idp.test/realms/home' '172.16.1.5'
 IDENTITY_BEFORE=$(shasum "$OIDC_DIR/account-id" "$OIDC_DIR/omni.asc" "$OIDC_DIR/tls/ca.key" "$OIDC_DIR/tls/server.key")
 OMNI_OIDC_CLIENT_SECRET='replacement-secret' run_setup \
   --appdata "$OIDC_DIR" --hostname omni-oidc.test --address 172.16.1.5 \
@@ -137,7 +140,7 @@ OMNI_OIDC_CLIENT_SECRET='replacement-secret' run_setup \
   --oidc-provider-url https://new-idp.test/issuer --oidc-client-id replacement-client --force-config
 IDENTITY_AFTER=$(shasum "$OIDC_DIR/account-id" "$OIDC_DIR/omni.asc" "$OIDC_DIR/tls/ca.key" "$OIDC_DIR/tls/server.key")
 [[ "$IDENTITY_BEFORE" == "$IDENTITY_AFTER" ]] || fail '--force-config rotated identity material'
-validate_common_yaml "$OIDC_DIR/omni.yaml" 'https://new-idp.test/issuer'
+validate_common_yaml "$OIDC_DIR/omni.yaml" 'https://new-idp.test/issuer' '172.16.1.5'
 compgen -G "$OIDC_DIR/omni.yaml.bak.*" >/dev/null || fail 'config regeneration did not create a backup'
 
 printf '%s\n' 'All tests passed.'
